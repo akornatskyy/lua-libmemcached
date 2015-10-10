@@ -3,6 +3,9 @@ language: c
 services:
     - memcached
 
+before_install:
+    - sudo apt-get install libmemcached-dev
+
 env:
     - LUA_VERSION=5.1.5
     - LUA_IMPL=luajit LUA_VERSION=2.0.4
