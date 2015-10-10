@@ -450,7 +450,7 @@ l_delete(lua_State *L)
     return l_error(L, rc);
 }
 
-/*
+
 static int
 l_touch(lua_State *L)
 {
@@ -477,7 +477,7 @@ l_touch(lua_State *L)
 
     return l_error(L, rc);
 }
-*/
+
 
 static int
 l_incr_decr(lua_State *L, memcached_incr_pt f)
@@ -521,7 +521,7 @@ l_decr(lua_State *L)
     return l_incr_decr(L, memcached_decrement);
 }
 
-/*
+
 static int
 l_exist(lua_State *L)
 {
@@ -546,7 +546,7 @@ l_exist(lua_State *L)
 
     return l_error(L, rc);
 }
-*/
+
 
 static int
 l_flush(lua_State *L)
@@ -621,10 +621,10 @@ luaopen_libmemcached(lua_State *L)
         { "append", l_append },
         { "prepend", l_prepend },
         { "delete", l_delete },
-        // { "touch", l_touch },
+        { "touch", l_touch },
         { "incr", l_incr },
         { "decr", l_decr },
-        // { "exist", l_exist },
+        { "exist", l_exist },
         { "flush", l_flush },
         { }
     };
