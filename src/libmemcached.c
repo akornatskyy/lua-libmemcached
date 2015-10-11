@@ -13,6 +13,34 @@
 #define FLAG_NUMBER     2
 #define FLAG_ENCODED    7
 
+#define DECODE_VALUE                                        \
+    switch(flags) {                                         \
+        case FLAG_ENCODED:                                  \
+            lua_rawgeti(L, LUA_REGISTRYINDEX, d->decode);   \
+            lua_pushlstring(L, value, value_length);        \
+            free(value);                                    \
+            lua_call(L, 1, 1);                              \
+            break;                                          \
+                                                            \
+        case FLAG_NUMBER:                                   \
+            lua_pushlstring(L, value, value_length);        \
+            free(value);                                    \
+            lua_Number number = lua_tonumber(L, -1);        \
+            lua_pop(L, 1);                                  \
+            lua_pushnumber(L, number);                      \
+            break;                                          \
+                                                            \
+        case FLAG_BOOLEAN:                                  \
+            lua_pushboolean(L, *value == '1' ? 1 : 0);      \
+            free(value);                                    \
+            break;                                          \
+                                                            \
+        default:                                            \
+            lua_pushlstring(L, value, value_length);        \
+            free(value);                                    \
+            break;                                          \
+    }                                                       \
+
 
 int luaopen_libmemcached(lua_State *L);
 
@@ -48,12 +76,14 @@ l_new(lua_State *L)
         return luaL_error(L, "bad argument #2 ('encode' "
                              "function is missing)");
     }
+    encode = luaL_ref(L, LUA_REGISTRYINDEX);
 
     lua_getfield(L, 2, "decode");
     if (!lua_isfunction(L, -1)) {
         return luaL_error(L, "bad argument #2 ('decode' "
                              "function is missing)");
     }
+    decode = luaL_ref(L, LUA_REGISTRYINDEX);
 
     if (lua_isnone(L, 3)) {
         key_encode = 0;
@@ -67,8 +97,6 @@ l_new(lua_State *L)
                              "must be a function)");
     }
 
-    decode = luaL_ref(L, LUA_REGISTRYINDEX);
-    encode = luaL_ref(L, LUA_REGISTRYINDEX);
 
     mc_data *d = (mc_data *)lua_newuserdata(L, sizeof(mc_data));
     luaL_getmetatable(L, MC_STATE);
@@ -123,11 +151,11 @@ l_error(lua_State *L, const memcached_return_t rc)
 }
 
 
-static const char *
+static inline const char *
 l_key_encode(lua_State *L, const mc_data *d, int narg, size_t *key_length)
 {
     const char *key = luaL_checklstring(L, narg, key_length);
-    if (*key_length >= MEMCACHED_MAX_KEY - 1) {
+    if (*key_length >= MEMCACHED_MAX_KEY) {
         if (d->key_encode) {
             lua_rawgeti(L, LUA_REGISTRYINDEX, d->key_encode);
             lua_pushvalue(L, narg);
@@ -136,9 +164,8 @@ l_key_encode(lua_State *L, const mc_data *d, int narg, size_t *key_length)
             lua_pop(L, 1);
         }
         else {
-            lua_pushliteral(L, "key is too long");
-            lua_error(L);
-            return NULL;
+            luaL_error(L, "key is too long");
+            return 0;
         }
     }
 
@@ -163,33 +190,7 @@ l_get(lua_State *L)
     value = memcached_get(d->mc, key, key_length, &value_length, &flags, &rc);
 
     if (value != NULL) {
-        switch(flags) {
-            case FLAG_ENCODED:
-                lua_rawgeti(L, LUA_REGISTRYINDEX, d->decode);
-                lua_pushlstring(L, value, value_length);
-                free(value);
-                lua_call(L, 1, 1);
-                break;
-
-            case FLAG_NUMBER:
-                lua_pushlstring(L, value, value_length);
-                free(value);
-                lua_Number number = lua_tonumber(L, -1);
-                lua_pop(L, 1);
-                lua_pushnumber(L, number);
-                break;
-
-            case FLAG_BOOLEAN:
-                lua_pushboolean(L, *value == '1' ? 1 : 0);
-                free(value);
-                break;
-
-            default:
-                lua_pushlstring(L, value, value_length);
-                free(value);
-                break;
-        }
-
+        DECODE_VALUE
         return 1;
     }
     else if (rc == MEMCACHED_SUCCESS) {
@@ -252,32 +253,7 @@ l_get_multi(lua_State *L)
         lua_pushlstring(L, key, key_length);
 
         if (value != NULL) {
-            switch(flags) {
-                case FLAG_ENCODED:
-                    lua_rawgeti(L, LUA_REGISTRYINDEX, d->decode);
-                    lua_pushlstring(L, value, value_length);
-                    free(value);
-                    lua_call(L, 1, 1);
-                    break;
-
-                case FLAG_NUMBER:
-                    lua_pushlstring(L, value, value_length);
-                    free(value);
-                    lua_Number number = lua_tonumber(L, -1);
-                    lua_pop(L, 1);
-                    lua_pushnumber(L, number);
-                    break;
-
-                case FLAG_BOOLEAN:
-                    lua_pushboolean(L, *value == '1' ? 1 : 0);
-                    free(value);
-                    break;
-
-                default:
-                    lua_pushlstring(L, value, value_length);
-                    free(value);
-                    break;
-            }
+            DECODE_VALUE
         }
         else {
             lua_pushliteral(L, "");
@@ -288,7 +264,7 @@ l_get_multi(lua_State *L)
 }
 
 
-static memcached_return_t
+static inline memcached_return_t
 l_put(lua_State *L, memcached_set_pt f)
 {
     const mc_data *d;
@@ -479,7 +455,7 @@ l_touch(lua_State *L)
 }
 
 
-static int
+static inline int
 l_incr_decr(lua_State *L, memcached_incr_pt f)
 {
     const mc_data *d;
