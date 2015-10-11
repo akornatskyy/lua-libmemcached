@@ -15,9 +15,9 @@ env:
 	if [ "$(LUA_IMPL)" = "luajit" ] ; then \
 		wget -c http://luajit.org/download/LuaJIT-$(LUA_VERSION).tar.gz \
 			-O - | tar xzf - ; \
-	  	cd LuaJIT-$(LUA_VERSION) ; \
+		cd LuaJIT-$(LUA_VERSION) ; \
 		export MACOSX_DEPLOYMENT_TARGET=10.10 ; \
-	    make -s install PREFIX=$(ENV) INSTALL_INC=$(ENV)/include ; \
+		make -s install PREFIX=$(ENV) INSTALL_INC=$(ENV)/include ; \
 		ln -sf luajit-$(LUA_VERSION) $(ENV)/bin/lua ; \
 		cd .. ; rm -rf luajit-$(LUA_VERSION) ; \
 	else \
