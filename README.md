@@ -55,7 +55,7 @@ end
 
 Example using local server with binary protocol:
 
-```
+```lua
 local c = libmemcached.new(
     '--server=127.0.0.1:11211 --binary-protocol',
     encoder, key_encode)
@@ -87,8 +87,6 @@ Used to fetch a single value from the server.
 c:get('key')
 ```
 
-Returns `nil` if key was not found.
-
 ### get_multi(keys)
 
 Used to select multiple keys at once.
@@ -96,8 +94,6 @@ Used to select multiple keys at once.
 ```lua
 c:get_multi({'key', 'key2'})
 ```
-
-Returns a *table*.
 
 ### append(key, value)
 ### prepend(key, value)
@@ -135,6 +131,6 @@ Install development dependencies:
 
 ```sh
 make env
-make test
+make lib test qa
 eval "$(env/bin/luarocks path --bin)"
 ```
