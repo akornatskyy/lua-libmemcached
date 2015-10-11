@@ -561,15 +561,17 @@ l_setfuncs(lua_State *L, const luaL_Reg *l)
 
 
 static int
-l_createmeta(lua_State *L, const char *name, const luaL_Reg *methods)
+l_createmeta(lua_State *L, const char *name,
+             const luaL_Reg *mt, const luaL_Reg *methods)
 {
     if (!luaL_newmetatable(L, name)) {
         return 0;
     }
 
-    l_setfuncs(L, methods);
+    l_setfuncs(L, mt);
 
-    lua_pushvalue(L, -1);
+    lua_newtable(L);
+    l_setfuncs(L, methods);
     lua_setfield(L, -2, "__index");
 
     lua_pushliteral(L, "it is not allowed to get metatable.");
@@ -586,8 +588,11 @@ luaopen_libmemcached(lua_State *L)
         { "new", l_new },
         { }
     };
-    luaL_Reg state_methods[] = {
+    luaL_Reg state_mt[] = {
         { "__gc", l_gc },
+        { }
+    };
+    luaL_Reg state_methods[] = {
         { "close", l_gc },
         { "get", l_get },
         { "get_multi", l_get_multi },
@@ -605,7 +610,7 @@ luaopen_libmemcached(lua_State *L)
         { }
     };
 
-    if (!l_createmeta(L, MC_STATE, state_methods)) {
+    if (!l_createmeta(L, MC_STATE, state_mt, state_methods)) {
         return 0;
     }
 
