@@ -13,6 +13,18 @@
 #define FLAG_NUMBER     2
 #define FLAG_ENCODED    7
 
+#if LUA_VERSION_NUM == 501
+#define l_setfuncs(L, funcs) luaL_register(L, NULL, funcs)
+#else
+#define l_setfuncs(L, funcs) luaL_setfuncs(L, funcs, 0)
+#endif
+
+#if LUA_VERSION_NUM == 501
+#define l_objlen lua_objlen
+#else
+#define l_objlen lua_rawlen
+#endif
+
 #define DECODE_VALUE                                        \
     switch(flags) {                                         \
         case FLAG_ENCODED:                                  \
@@ -217,7 +229,7 @@ l_get_multi(lua_State *L)
     luaL_checktype(L, 2, LUA_TTABLE);
 
     int i;
-    const int n = lua_objlen(L, 2);
+    const int n = l_objlen(L, 2);
     const char *keys[n];
     size_t keys_size[n];
 
@@ -543,21 +555,6 @@ l_flush(lua_State *L)
 
     return l_error(L, rc);
 }
-
-
-#if !defined LUA_VERSION_NUM || LUA_VERSION_NUM==501
-
-static void
-l_setfuncs(lua_State *L, const luaL_Reg *l)
-{
-    for (; l->name != NULL; l++) {
-        lua_pushstring(L, l->name);
-        lua_pushcclosure(L, l->func, 0);
-        lua_settable(L, -3);
-    }
-}
-
-#endif
 
 
 static int
