@@ -5,6 +5,9 @@
 An interface to the [libmemcached](http://libmemcached.org) C client for the
 [Lua](http://www.lua.org/) programming language.
 
+Compatibile with *libmemcached 1.0.3+* (except *1.0.12* and *1.0.14*);
+*exist* requires *1.0.9+*.
+
 # Installation
 
 ```sh
