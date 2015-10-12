@@ -138,6 +138,18 @@ The behavior used by the underlying libmemcached object. See more
 c:set_behavior(libmemcached.behaviors.TCP_NODELAY, 1)
 ```
 
+### set\_encoding_key(secret)
+
+Sets the key used to encrypt and decrypt data (only AES is supported).
+
+```lua
+c:set_encoding_key('secret')
+```
+
+Caveats:
+
+1. The binary protocol does not correctly handle encryption.
+1. Segmentation fault with empty string value, e.g. `c:set('x', '')`.
 
 # Setup
 
