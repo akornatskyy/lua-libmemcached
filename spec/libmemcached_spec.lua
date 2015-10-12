@@ -90,6 +90,7 @@ end)
 
 local function describe_basic_commands(options)
     local c = assert(libmemcached.new(options, json))
+    c:set_behavior(libmemcached.behaviors.TCP_NODELAY, 1)
 
     local samples = {
         t_empty = {},
@@ -323,4 +324,44 @@ end)
 
 describe('libmemcached commands (binary protocol)', function()
     describe_basic_commands('--server=127.0.0.1 --binary-protocol')
+end)
+
+describe('behavior', function()
+    local c = assert(libmemcached.new('--server=127.0.0.1', json))
+
+    describe('get', function()
+        it('1st argument is a number', function()
+            assert.has_error(function()
+                c:get_behavior()
+            end,
+            'bad argument #1 to \'get_behavior\' (number expected, ' ..
+            'got no value)')
+        end)
+    end)
+
+    describe('set', function()
+        it('1st argument is a number', function()
+            assert.has_error(function()
+                c:set_behavior()
+            end,
+            'bad argument #1 to \'set_behavior\' (number expected, ' ..
+            'got no value)')
+        end)
+
+        it('2nd argument is a number', function()
+            assert.has_error(function()
+                c:set_behavior(libmemcached.behaviors.NO_BLOCK)
+            end,
+            'bad argument #2 to \'set_behavior\' (number expected, ' ..
+            'got no value)')
+        end)
+    end)
+
+    it('default can be set back', function()
+        for name, i in pairs(libmemcached.behaviors) do
+            local d = c:get_behavior(i)
+            assert.is_true(c:set_behavior(i, d))
+            assert.equals(d, c:get_behavior(i))
+        end
+    end)
 end)

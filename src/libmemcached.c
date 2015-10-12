@@ -49,6 +49,10 @@
             break;                                          \
     }                                                       \
 
+#define BEHAVIOR(NAME)                                      \
+    lua_pushinteger(L, MEMCACHED_BEHAVIOR_ ## NAME);        \
+    lua_setfield(L, -2, #NAME);                             \
+
 
 typedef memcached_return_t
 (memcached_set_pt)(memcached_st *ptr, const char *key, size_t key_length,
@@ -183,6 +187,47 @@ l_key_encode(lua_State *L, const mc_data *d, int narg, size_t *key_length)
     }
 
     return key;
+}
+
+
+static int
+l_get_behavior(lua_State *L)
+{
+    const mc_data *d;
+    memcached_behavior_t flag;
+    uint64_t r;
+
+    d = (mc_data *)luaL_checkudata(L, 1, MC_STATE);
+    flag = luaL_checknumber(L, 2);
+
+    r = memcached_behavior_get(d->mc, flag);
+
+    lua_pushnumber(L, r);
+
+    return 1;
+}
+
+
+static int
+l_set_behavior(lua_State *L)
+{
+    const mc_data *d;
+    memcached_behavior_t flag;
+    uint64_t data;
+    memcached_return_t rc;
+
+    d = (mc_data *)luaL_checkudata(L, 1, MC_STATE);
+    flag = luaL_checknumber(L, 2);
+    data = luaL_checknumber(L, 3);
+
+    rc = memcached_behavior_set(d->mc, flag, data);
+
+    if (rc == MEMCACHED_SUCCESS) {
+        lua_pushboolean(L, 1);
+        return 1;
+    }
+
+    return l_error(L, rc);
 }
 
 
@@ -591,6 +636,8 @@ luaopen_libmemcached(lua_State *L)
     };
     luaL_Reg state_methods[] = {
         { "close", l_gc },
+        { "get_behavior", l_get_behavior },
+        { "set_behavior", l_set_behavior },
         { "get", l_get },
         { "get_multi", l_get_multi },
         { "set", l_set },
@@ -624,15 +671,48 @@ luaopen_libmemcached(lua_State *L)
     lua_newtable(L);
 
     // status
-    /*lua_newtable(L);
+    lua_newtable(L);
 
-    lua_pushinteger(L, MEMCACHED_SUCCESS);
-    lua_setfield(L, -2, "OK");
+    BEHAVIOR(NO_BLOCK)
+    BEHAVIOR(TCP_NODELAY)
+    BEHAVIOR(HASH)
+    BEHAVIOR(KETAMA)
+    BEHAVIOR(SOCKET_SEND_SIZE)
+    BEHAVIOR(SOCKET_RECV_SIZE)
+    // BEHAVIOR(CACHE_LOOKUPS)
+    BEHAVIOR(SUPPORT_CAS)
+    BEHAVIOR(POLL_TIMEOUT)
+    BEHAVIOR(DISTRIBUTION)
+    BEHAVIOR(BUFFER_REQUESTS)
+    // BEHAVIOR(USER_DATA)
+    BEHAVIOR(SORT_HOSTS)
+    BEHAVIOR(VERIFY_KEY)
+    BEHAVIOR(CONNECT_TIMEOUT)
+    BEHAVIOR(RETRY_TIMEOUT)
+    BEHAVIOR(KETAMA_WEIGHTED)
+    BEHAVIOR(KETAMA_HASH)
+    BEHAVIOR(BINARY_PROTOCOL)
+    BEHAVIOR(SND_TIMEOUT)
+    BEHAVIOR(RCV_TIMEOUT)
+    BEHAVIOR(SERVER_FAILURE_LIMIT)
+    BEHAVIOR(IO_MSG_WATERMARK)
+    BEHAVIOR(IO_BYTES_WATERMARK)
+    BEHAVIOR(IO_KEY_PREFETCH)
+    BEHAVIOR(HASH_WITH_PREFIX_KEY)
+    BEHAVIOR(NOREPLY)
+    BEHAVIOR(USE_UDP)
+    BEHAVIOR(AUTO_EJECT_HOSTS)
+    BEHAVIOR(NUMBER_OF_REPLICAS)
+    BEHAVIOR(RANDOMIZE_REPLICA_READ)
+    // BEHAVIOR(CORK)
+    BEHAVIOR(TCP_KEEPALIVE)
+    BEHAVIOR(TCP_KEEPIDLE)
+    // BEHAVIOR(LOAD_FROM_FILE)
+    BEHAVIOR(REMOVE_FAILED_SERVERS)
+    BEHAVIOR(DEAD_TIMEOUT)
+    // BEHAVIOR(MAX)
 
-    lua_pushinteger(L, MEMCACHED_NOTSTORED);
-    lua_setfield(L, -2, "NOTSTORED");
-
-    lua_setfield(L, -2, "status");*/
+    lua_setfield(L, -2, "behaviors");
 
     l_setfuncs(L, methods);
 
