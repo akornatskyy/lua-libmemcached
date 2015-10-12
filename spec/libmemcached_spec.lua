@@ -88,8 +88,8 @@ describe('libmemcached lifecycle', function()
     end)
 end)
 
-describe('libmemcached commands', function()
-    local c = assert(libmemcached.new('--server=127.0.0.1:11211', json))
+local function describe_basic_commands(options)
+    local c = assert(libmemcached.new(options, json))
 
     local samples = {
         t_empty = {},
@@ -315,4 +315,12 @@ describe('libmemcached commands', function()
             end)
         end)
     end
+end
+
+describe('libmemcached commands (text protocol)', function()
+    describe_basic_commands('--server=127.0.0.1')
+end)
+
+describe('libmemcached commands (binary protocol)', function()
+    describe_basic_commands('--server=127.0.0.1 --binary-protocol')
 end)
