@@ -511,6 +511,8 @@ l_decr(lua_State *L)
 }
 
 
+#if LIBMEMCACHED_VERSION_HEX >= 0x01000009
+
 static int
 l_exist(lua_State *L)
 {
@@ -536,6 +538,7 @@ l_exist(lua_State *L)
     return l_error(L, rc);
 }
 
+#endif
 
 static int
 l_flush(lua_State *L)
@@ -599,7 +602,9 @@ luaopen_libmemcached(lua_State *L)
         { "touch", l_touch },
         { "incr", l_incr },
         { "decr", l_decr },
+#if LIBMEMCACHED_VERSION_HEX >= 0x01000009
         { "exist", l_exist },
+#endif
         { "flush", l_flush },
         { }
     };

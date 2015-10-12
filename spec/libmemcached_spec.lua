@@ -304,13 +304,15 @@ describe('libmemcached commands', function()
         end)
     end)
 
-    describe('exist', function()
-        it('returns nil if key not found', function()
-            assert.is_nil(c:exist('not-found'))
-        end)
+    if c.exist then
+        describe('exist', function()
+            it('returns nil if key not found', function()
+                assert.is_nil(c:exist('not-found'))
+            end)
 
-        it('returns true on success', function()
-            assert.is_true(c:exist('s'))
+            it('returns true on success', function()
+                assert.is_true(c:exist('s'))
+            end)
         end)
-    end)
+    end
 end)
