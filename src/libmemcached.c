@@ -232,6 +232,28 @@ l_set_behavior(lua_State *L)
 
 
 static int
+l_set_encoding_key(lua_State *L)
+{
+    const mc_data *d;
+    const char *key;
+    size_t key_length;
+    memcached_return_t rc;
+
+    d = (mc_data *)luaL_checkudata(L, 1, MC_STATE);
+    key = luaL_checklstring(L, 2, &key_length);
+
+    rc = memcached_set_encoding_key(d->mc, key, key_length);
+
+    if (rc == MEMCACHED_SUCCESS) {
+        lua_pushboolean(L, 1);
+        return 1;
+    }
+
+    return l_error(L, rc);
+}
+
+
+static int
 l_get(lua_State *L)
 {
     const mc_data *d;
@@ -638,6 +660,7 @@ luaopen_libmemcached(lua_State *L)
         { "close", l_gc },
         { "get_behavior", l_get_behavior },
         { "set_behavior", l_set_behavior },
+        { "set_encoding_key", l_set_encoding_key },
         { "get", l_get },
         { "get_multi", l_get_multi },
         { "set", l_set },

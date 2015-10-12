@@ -88,10 +88,7 @@ describe('libmemcached lifecycle', function()
     end)
 end)
 
-local function describe_basic_commands(options)
-    local c = assert(libmemcached.new(options, json))
-    c:set_behavior(libmemcached.behaviors.TCP_NODELAY, 1)
-
+local function describe_basic_commands(c)
     local samples = {
         t_empty = {},
         t = {message = 'hello'},
@@ -112,7 +109,7 @@ local function describe_basic_commands(options)
 
     describe('get', function()
         for key, value in pairs(samples) do
-            it('decodes ' .. key .. 'sample', function()
+            it('decodes ' .. key .. ' sample', function()
                 assert.same(value, c:get(key))
             end)
         end
@@ -319,14 +316,19 @@ local function describe_basic_commands(options)
 end
 
 describe('libmemcached commands (text protocol)', function()
-    describe_basic_commands('--server=127.0.0.1')
+    local c = assert(libmemcached.new('--server=127.0.0.1', json))
+
+    describe_basic_commands(c)
 end)
 
 describe('libmemcached commands (binary protocol)', function()
-    describe_basic_commands('--server=127.0.0.1 --binary-protocol')
+    local c = assert(libmemcached.new(
+        '--server=127.0.0.1 --binary-protocol', json))
+
+    describe_basic_commands(c)
 end)
 
-describe('behavior', function()
+describe('libmemcached behavior', function()
     local c = assert(libmemcached.new('--server=127.0.0.1', json))
 
     describe('get', function()
@@ -363,5 +365,27 @@ describe('behavior', function()
             assert.is_true(c:set_behavior(i, d))
             assert.equals(d, c:get_behavior(i))
         end
+    end)
+end)
+
+describe('libmemcached data encryption', function()
+    local c = assert(libmemcached.new('--server=127.0.0.1', json))
+    -- binary protocol does not support encryption
+    assert(c:set_encoding_key('secret'))
+    c:set('x', 'test')
+
+    -- Segmentation fault
+    -- c:set('x', '')
+    -- describe_basic_commands(c)
+
+    it('can read encrypted data back', function()
+        assert.equals('test', c:get('x'))
+    end)
+
+    it('fails to decode with invalid key', function()
+        c:set_encoding_key('wrong')
+        local ok, err = c:get('x')
+        assert.is_nil(ok)
+        assert.is_true(err:find('decrypt') >= 0)
     end)
 end)
