@@ -128,6 +128,17 @@ Used to wipe clean the contents of memcached servers. It will
 either do this immediately or expire the content based on the
 expiration time passed.
 
+### get_behavior(flag)
+### set_behavior(flag, data)
+
+The behavior used by the underlying libmemcached object. See more
+[here](http://docs.libmemcached.org/memcached_behavior.html#description).
+
+```lua
+c:set_behavior(libmemcached.behaviors.TCP_NODELAY, 1)
+```
+
+
 # Setup
 
 Install development dependencies:
