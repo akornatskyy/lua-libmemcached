@@ -14,15 +14,11 @@
 #define FLAG_ENCODED    7
 
 #if LUA_VERSION_NUM == 501
-#define l_setfuncs(L, funcs) luaL_register(L, NULL, funcs)
+#define l_setfuncs(L, funcs)    luaL_register(L, NULL, funcs)
+#define l_objlen                lua_objlen
 #else
-#define l_setfuncs(L, funcs) luaL_setfuncs(L, funcs, 0)
-#endif
-
-#if LUA_VERSION_NUM == 501
-#define l_objlen lua_objlen
-#else
-#define l_objlen lua_rawlen
+#define l_setfuncs(L, funcs)    luaL_setfuncs(L, funcs, 0)
+#define l_objlen                lua_rawlen
 #endif
 
 #define DECODE_VALUE                                        \
@@ -52,9 +48,6 @@
             free(value);                                    \
             break;                                          \
     }                                                       \
-
-
-int luaopen_libmemcached(lua_State *L);
 
 
 typedef memcached_return_t
@@ -109,7 +102,6 @@ l_new(lua_State *L)
                              "must be a function)");
     }
 
-
     mc_data *d = (mc_data *)lua_newuserdata(L, sizeof(mc_data));
     luaL_getmetatable(L, MC_STATE);
     lua_setmetatable(L, -2);
@@ -129,17 +121,26 @@ l_gc(lua_State *L)
 {
     mc_data *d = (mc_data *)luaL_checkudata(L, 1, MC_STATE);
 
-    if (d != NULL && d->mc != NULL) {
-        memcached_free(d->mc);
-        d->mc = NULL;
-
-        luaL_unref(L, LUA_REGISTRYINDEX, d->decode);
-        luaL_unref(L, LUA_REGISTRYINDEX, d->encode);
-        if (d->key_encode) {
-            luaL_unref(L, LUA_REGISTRYINDEX, d->key_encode);
+    if (d != NULL) {
+        if (d->mc != NULL) {
+            memcached_free(d->mc);
+            d->mc = NULL;
         }
 
-        d->decode = d->encode = d->key_encode = 0;
+        if (d->encode) {
+            luaL_unref(L, LUA_REGISTRYINDEX, d->encode);
+            d->encode = 0;
+        }
+
+        if (d->decode) {
+            luaL_unref(L, LUA_REGISTRYINDEX, d->decode);
+            d->decode = 0;
+        }
+
+        if (d->key_encode) {
+            luaL_unref(L, LUA_REGISTRYINDEX, d->key_encode);
+            d->key_encode = 0;
+        }
     }
 
     return 0;
@@ -558,8 +559,8 @@ l_flush(lua_State *L)
 
 
 static int
-l_createmeta(lua_State *L, const char *name,
-             const luaL_Reg *mt, const luaL_Reg *methods)
+l_createmeta(lua_State *L, const char *name, const luaL_Reg *methods,
+             const luaL_Reg *mt)
 {
     if (!luaL_newmetatable(L, name)) {
         return 0;
@@ -585,10 +586,6 @@ luaopen_libmemcached(lua_State *L)
         { "new", l_new },
         { }
     };
-    luaL_Reg state_mt[] = {
-        { "__gc", l_gc },
-        { }
-    };
     luaL_Reg state_methods[] = {
         { "close", l_gc },
         { "get", l_get },
@@ -606,8 +603,12 @@ luaopen_libmemcached(lua_State *L)
         { "flush", l_flush },
         { }
     };
+    luaL_Reg state_mt[] = {
+        { "__gc", l_gc },
+        { }
+    };
 
-    if (!l_createmeta(L, MC_STATE, state_mt, state_methods)) {
+    if (!l_createmeta(L, MC_STATE, state_methods, state_mt)) {
         return 0;
     }
 
