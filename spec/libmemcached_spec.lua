@@ -2,6 +2,18 @@ local libmemcached = require 'libmemcached'
 local json = require 'dkjson'
 local assert, describe, it = assert, describe, it
 
+local function count_used_registry()
+    local r = debug.getregistry()
+    local n = 0
+    for key, value in pairs(r) do
+        if type(key) == 'number' and type(value) ~= 'number' then
+            n = n + 1
+        end
+    end
+    return n
+end
+
+count_used_registry()
 
 describe('libmemcached lifecycle', function()
     describe('new', function()
@@ -69,6 +81,23 @@ describe('libmemcached lifecycle', function()
                 c:__gc()
             end)
         end)
+
+        it('frees registry entries', function()
+            collectgarbage()
+            collectgarbage()
+            collectgarbage()
+            local registry_size = count_used_registry()
+            local N = 2
+            local objects = {}
+            for i = 1, N do
+                objects[i] = assert(libmemcached.new('', json))
+            end
+            objects = nil
+            collectgarbage()
+            collectgarbage()
+            collectgarbage()
+            assert.equal(registry_size, count_used_registry())
+        end)
     end)
 
     describe('close', function()
@@ -84,6 +113,22 @@ describe('libmemcached lifecycle', function()
             local c = assert(libmemcached.new('', json))
             c:close()
             c:close()
+        end)
+
+        it('frees registry entries', function()
+            collectgarbage()
+            collectgarbage()
+            collectgarbage()
+            local registry_size = count_used_registry()
+            local N = 100
+            local objects = {}
+            for i = 1, N do
+                objects[i] = assert(libmemcached.new('', json))
+            end
+            for i = 1, N do
+                objects[i]:close()
+            end
+            assert.equal(registry_size, count_used_registry())
         end)
     end)
 end)
