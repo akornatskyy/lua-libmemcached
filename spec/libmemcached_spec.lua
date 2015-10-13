@@ -3,6 +3,24 @@ local json = require 'dkjson'
 local assert, describe, it = assert, describe, it
 
 
+local function count_refs()
+    local m = 0
+    local n = 0
+    local r = debug.getregistry()
+    local i = r[0]
+    for k, v in pairs(r) do
+        if type(k) == 'number' and type(v) == 'number' then
+            m = m + 1
+        end
+    end
+    while i do
+        i = r[i]
+        n = n + 1
+    end
+    return m - n
+end
+
+
 describe('libmemcached lifecycle', function()
     describe('new', function()
         it('1st argument is a connection string', function()
@@ -69,6 +87,29 @@ describe('libmemcached lifecycle', function()
                 c:__gc()
             end)
         end)
+
+        it('frees registry entries', function()
+            collectgarbage()
+            local N = 100
+            local c = count_refs()
+            local t = {}
+            for i = 1, N do
+                t[i] = assert(libmemcached.new('', json))
+            end
+            t = {}
+            collectgarbage()
+            assert.equal(c, count_refs())
+
+            c = count_refs()
+            local key_encode = function(s) return s end
+            for i = 1, N do
+                t[i] = assert(libmemcached.new('', json, key_encode))
+            end
+            t = nil
+            collectgarbage()
+            assert.equal(c, count_refs())
+            assert.is_nil(t)
+        end)
     end)
 
     describe('close', function()
@@ -84,6 +125,29 @@ describe('libmemcached lifecycle', function()
             local c = assert(libmemcached.new('', json))
             c:close()
             c:close()
+        end)
+
+        it('frees registry entries', function()
+            local N = 100
+            local c = count_refs()
+            local t = {}
+            for i = 1, N do
+                t[i] = assert(libmemcached.new('', json))
+            end
+            for i = 1, N do
+                t[i]:close()
+            end
+            assert.equal(c, count_refs())
+
+            c = count_refs()
+            local key_encode = function(s) return s end
+            for i = 1, N do
+                t[i] = assert(libmemcached.new('', json, key_encode))
+            end
+            for i = 1, N do
+                t[i]:close()
+            end
+            assert.equal(c, count_refs())
         end)
     end)
 end)
