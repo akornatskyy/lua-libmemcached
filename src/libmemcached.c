@@ -85,38 +85,53 @@ l_new(lua_State *L)
         return luaL_error(L, "bad argument #2 ('encode' "
                              "function is missing)");
     }
-    encode = luaL_ref(L, LUA_REGISTRYINDEX);
 
     lua_getfield(L, 2, "decode");
     if (!lua_isfunction(L, -1)) {
         return luaL_error(L, "bad argument #2 ('decode' "
                              "function is missing)");
     }
-    decode = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    if (lua_isnone(L, 3)) {
-        key_encode = 0;
-    }
-    else if (lua_isfunction(L, 3)) {
-        lua_pushvalue(L, 3);
-        key_encode = luaL_ref(L, LUA_REGISTRYINDEX);
-    }
-    else {
+    if (!lua_isnone(L, 3) && !lua_isfunction(L, 3)) {
         return luaL_error(L, "bad argument #3 ('key_encode' "
                              "must be a function)");
     }
+
+    memcached_st *mc = memcached(config_string, strlen(config_string));
+    if (!mc) {
+        return luaL_error(L, "cannot allocate memcached object");
+    }
+
+    decode = luaL_ref(L, LUA_REGISTRYINDEX);
+    encode = luaL_ref(L, LUA_REGISTRYINDEX);
+    key_encode = !lua_isnone(L, 3) ? luaL_ref(L, LUA_REGISTRYINDEX) : 0;
 
     mc_data *d = (mc_data *)lua_newuserdata(L, sizeof(mc_data));
     luaL_getmetatable(L, MC_STATE);
     lua_setmetatable(L, -2);
 
-    d->mc = memcached(config_string, strlen(config_string));
-    // memcached_behavior_set(d->mc, MEMCACHED_BEHAVIOR_TCP_NODELAY, 1);
+    d->mc = mc;
+    d->key_encode = key_encode;
     d->encode = encode;
     d->decode = decode;
-    d->key_encode = key_encode;
 
     return 1;
+}
+
+
+static int
+l_free(lua_State *L, mc_data *d)
+{
+    memcached_free(d->mc);
+    d->mc = NULL;
+
+    if (d->key_encode) {
+        luaL_unref(L, LUA_REGISTRYINDEX, d->key_encode);
+    }
+    luaL_unref(L, LUA_REGISTRYINDEX, d->encode);
+    luaL_unref(L, LUA_REGISTRYINDEX, d->decode);
+
+    return 0;
 }
 
 
@@ -125,29 +140,28 @@ l_gc(lua_State *L)
 {
     mc_data *d = (mc_data *)luaL_checkudata(L, 1, MC_STATE);
 
-    if (d != NULL) {
-        if (d->mc != NULL) {
-            memcached_free(d->mc);
-            d->mc = NULL;
-        }
-
-        if (d->encode) {
-            luaL_unref(L, LUA_REGISTRYINDEX, d->encode);
-            d->encode = 0;
-        }
-
-        if (d->decode) {
-            luaL_unref(L, LUA_REGISTRYINDEX, d->decode);
-            d->decode = 0;
-        }
-
-        if (d->key_encode) {
-            luaL_unref(L, LUA_REGISTRYINDEX, d->key_encode);
-            d->key_encode = 0;
-        }
+    if (d->mc != NULL) {
+        l_free(L, d);
     }
 
     return 0;
+}
+
+
+static int
+l_close(lua_State *L)
+{
+    mc_data *d = (mc_data *)luaL_checkudata(L, 1, MC_STATE);
+
+    if (d->mc == NULL) {
+        lua_pushboolean (L, 0);
+        return 1;
+    }
+
+    l_free(L, d);
+
+    lua_pushboolean (L, 1);
+    return 1;
 }
 
 
@@ -657,7 +671,7 @@ luaopen_libmemcached(lua_State *L)
         { }
     };
     luaL_Reg state_methods[] = {
-        { "close", l_gc },
+        { "close", l_close },
         { "get_behavior", l_get_behavior },
         { "set_behavior", l_set_behavior },
         { "set_encoding_key", l_set_encoding_key },

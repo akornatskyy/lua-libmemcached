@@ -9,7 +9,7 @@ local function count_refs()
     local r = debug.getregistry()
     local i = r[0]
     for k, v in pairs(r) do
-        if type(k) == 'number' and type(v) == 'number' then
+        if type(k) == 'number' then
             m = m + 1
         end
     end
@@ -24,46 +24,65 @@ end
 describe('libmemcached lifecycle', function()
     describe('new', function()
         it('1st argument is a connection string', function()
+            local c = count_refs()
             assert.has_error(function()
                 libmemcached.new()
             end,
             'bad argument #1 to \'new\' (string expected, got no value)')
+            assert.equals(c, count_refs())
         end)
 
         it('2nd argument is a table', function()
+            local c = count_refs()
             assert.has_error(function()
                 libmemcached.new('')
             end,
             'bad argument #2 to \'new\' (table expected, got no value)')
+            assert.equals(c, count_refs())
         end)
 
         it('2nd argument table encode is missing', function()
+            local c = count_refs()
             assert.has_error(function()
                 libmemcached.new('', {})
             end,
             'bad argument #2 (\'encode\' function is missing)')
+            assert.equals(c, count_refs())
         end)
 
         it('2nd argument table decode is missing', function()
+            local c = count_refs()
             assert.has_error(function()
                 libmemcached.new('', {encode = function() end})
             end,
             'bad argument #2 (\'decode\' function is missing)')
+            assert.equals(c, count_refs())
+        end)
+
+        it('invalid connection options', function()
+            local c = count_refs()
+            assert.has_error(function()
+                libmemcached.new('', json)
+            end,
+            'cannot allocate memcached object')
+            assert.equals(c, count_refs())
         end)
 
         it('3rd argument key_encode is optional', function()
-            assert(libmemcached.new('', json))
+            assert(libmemcached.new('--server=127.0.0.1', json))
         end)
 
         it('3rd argument must be a function', function()
+            local c = count_refs()
             assert.has_error(function()
-                libmemcached.new('', json, nil)
+                libmemcached.new('--server=127.0.0.1', json, nil)
             end,
             'bad argument #3 (\'key_encode\' must be a function)')
+            assert.equals(c, count_refs())
         end)
 
         it('3rd argument is a function', function()
-            assert(libmemcached.new('', json, function(s)
+            assert(libmemcached.new('--server=127.0.0.1', json, function(s)
                 return s
             end))
         end)
@@ -82,7 +101,7 @@ describe('libmemcached lifecycle', function()
 
     describe('gc', function()
         it('cant call gc from Lua code', function()
-            local c = assert(libmemcached.new('', json))
+            local c = assert(libmemcached.new('--server=127.0.0.1', json))
             assert.has_error(function()
                 c:__gc()
             end)
@@ -94,7 +113,7 @@ describe('libmemcached lifecycle', function()
             local c = count_refs()
             local t = {}
             for i = 1, N do
-                t[i] = assert(libmemcached.new('', json))
+                t[i] = assert(libmemcached.new('--server=127.0.0.1', json))
             end
             t = {}
             collectgarbage()
@@ -103,7 +122,7 @@ describe('libmemcached lifecycle', function()
             c = count_refs()
             local key_encode = function(s) return s end
             for i = 1, N do
-                t[i] = assert(libmemcached.new('', json, key_encode))
+                t[i] = assert(libmemcached.new('--server=127.0.0.1', json, key_encode))
             end
             t = nil
             collectgarbage()
@@ -114,7 +133,7 @@ describe('libmemcached lifecycle', function()
 
     describe('close', function()
         it('releases instance', function()
-            local c = assert(libmemcached.new('', json))
+            local c = assert(libmemcached.new('--server=127.0.0.1', json))
             c:close()
             local r, err = c:get('s')
             assert.is_nil(r)
@@ -122,9 +141,9 @@ describe('libmemcached lifecycle', function()
         end)
 
         it('safe to call twice', function()
-            local c = assert(libmemcached.new('', json))
-            c:close()
-            c:close()
+            local c = assert(libmemcached.new('--server=127.0.0.1', json))
+            assert.is_true(c:close())
+            assert.is_false(c:close())
         end)
 
         it('frees registry entries', function()
@@ -132,7 +151,7 @@ describe('libmemcached lifecycle', function()
             local c = count_refs()
             local t = {}
             for i = 1, N do
-                t[i] = assert(libmemcached.new('', json))
+                t[i] = assert(libmemcached.new('--server=127.0.0.1', json))
             end
             for i = 1, N do
                 t[i]:close()
@@ -142,7 +161,7 @@ describe('libmemcached lifecycle', function()
             c = count_refs()
             local key_encode = function(s) return s end
             for i = 1, N do
-                t[i] = assert(libmemcached.new('', json, key_encode))
+                t[i] = assert(libmemcached.new('--server=127.0.0.1', json, key_encode))
             end
             for i = 1, N do
                 t[i]:close()
