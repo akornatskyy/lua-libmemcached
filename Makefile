@@ -4,9 +4,20 @@
 ENV=$(shell pwd)/env
 LUA_IMPL=
 LUA_VERSION=5.1.5
-PLATFORM=macosx
 LUA_ROCKS_VERSION=2.2.2
-LIBMEMCACHED_DIR=/opt/local
+LIBMEMCACHED_DIR=/usr
+
+PLATFORM=$(shell uname -s)
+ifeq (Darwin,$(PLATFORM))
+	PLATFORM=macosx
+	LIBMEMCACHED_DIR=/opt/local
+else
+ifeq (Linux,$(PLATFORM))
+	PLATFORM=linux
+else
+	PLATFORM=ansi
+endif
+endif
 
 
 env:
