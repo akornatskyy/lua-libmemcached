@@ -20,10 +20,9 @@ env:
 
 install:
     - make env LUA_IMPL=$LUA_IMPL LUA_VERSION=$LUA_VERSION
-    - eval `env/bin/luarocks path`
 
 script:
     - make lib
     - make test
-    - if [[ "$LUA_IMPL" != *"luajit"* ]]; then make valgrind-test; fi
     - make qa
+    - if [[ "$LUA_IMPL" != "luajit" ]]; then make valgrind-test; fi
