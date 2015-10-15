@@ -245,6 +245,8 @@ l_set_behavior(lua_State *L)
 }
 
 
+#if LIBMEMCACHED_VERSION_HEX >= 0x01000006
+
 static int
 l_set_encoding_key(lua_State *L)
 {
@@ -265,6 +267,8 @@ l_set_encoding_key(lua_State *L)
 
     return l_error(L, rc);
 }
+
+#endif
 
 
 static int
@@ -621,6 +625,7 @@ l_exist(lua_State *L)
 
 #endif
 
+
 static int
 l_flush(lua_State *L)
 {
@@ -674,7 +679,9 @@ luaopen_libmemcached(lua_State *L)
         { "close", l_close },
         { "get_behavior", l_get_behavior },
         { "set_behavior", l_set_behavior },
+#if LIBMEMCACHED_VERSION_HEX >= 0x01000006
         { "set_encoding_key", l_set_encoding_key },
+#endif
         { "get", l_get },
         { "get_multi", l_get_multi },
         { "set", l_set },
