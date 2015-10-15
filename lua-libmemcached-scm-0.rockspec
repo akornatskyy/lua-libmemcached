@@ -28,7 +28,8 @@ build = {
     modules = {
         ['libmemcached'] = {
             sources = {'src/libmemcached.c'},
-            libraries = {'memcached'},
+            -- libmemcached 1.0.14+ requires pthread
+            libraries = {'memcached', 'pthread'},
             incdirs = {'$(LIBMEMCACHED_INCDIR)'},
             libdirs = {'$(LIBMEMCACHED_LIBDIR)'}
         }
