@@ -61,6 +61,7 @@ describe('libmemcached lifecycle', function()
 
         it('invalid connection options', function()
             local c = count_refs()
+            -- fails with 1.0.[3-7]
             assert.has_error(function()
                 libmemcached.new('', json)
             end,
@@ -453,22 +454,24 @@ end)
 
 describe('libmemcached data encryption', function()
     local c = assert(libmemcached.new('--server=127.0.0.1', json))
-    -- binary protocol does not support encryption
-    assert(c:set_encoding_key('secret'))
-    c:set('x', 'test')
+    if c.set_encoding_key then
+        -- binary protocol does not support encryption
+        assert(c:set_encoding_key('secret'))
+        c:set('x', 'test')
 
-    -- Segmentation fault
-    -- c:set('x', '')
-    -- describe_basic_commands(c)
+        -- Segmentation fault
+        -- c:set('x', '')
+        -- describe_basic_commands(c)
 
-    it('can read encrypted data back', function()
-        assert.equals('test', c:get('x'))
-    end)
+        it('can read encrypted data back', function()
+            assert.equals('test', c:get('x'))
+        end)
 
-    it('fails to decode with invalid key', function()
-        c:set_encoding_key('wrong')
-        local ok, err = c:get('x')
-        assert.is_nil(ok)
-        assert.is_true(err:find('decrypt') >= 0)
-    end)
+        it('fails to decode with invalid key', function()
+            c:set_encoding_key('wrong')
+            local ok, err = c:get('x')
+            assert.is_nil(ok)
+            assert(err:find('decrypt') or err:find('FAIL'))
+        end)
+    end
 end)
