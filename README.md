@@ -5,8 +5,7 @@
 An interface to the [libmemcached](http://libmemcached.org) C client for the
 [Lua](http://www.lua.org/) programming language.
 
-Compatibile with *libmemcached 1.0.3+* (except *1.0.12* and *1.0.14*);
-*exist* requires *1.0.9+*.
+Compatibile with *libmemcached 1.0.3+*, *~1.0.12*.
 
 # Installation
 
@@ -122,6 +121,8 @@ value is then returned.
 
 Check to see if a key exists.
 
+*Version: 1.0.9+*
+
 ### flush([expiration])
 
 Used to wipe clean the contents of memcached servers. It will
@@ -150,6 +151,8 @@ Caveats:
 
 1. The binary protocol does not correctly handle encryption.
 1. Segmentation fault with empty string value, e.g. `c:set('x', '')`.
+
+*Version: 1.0.6+*
 
 # Setup
 
