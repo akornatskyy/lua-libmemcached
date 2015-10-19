@@ -260,11 +260,18 @@ local function describe_basic_commands(c)
             end, 'unsuported value type')
         end)
 
-        it('3st argument is a number', function()
+        it('an error if 3rd argument is not a number', function()
             assert.has_error(function()
                 c:set('s', '', 'x')
             end,
             'bad argument #3 to \'set\' (number expected, got string)')
+        end)
+
+        it('3rd argument is an expiration', function()
+            for key, value in pairs(samples) do
+                assert(c:set(key, value, 100))
+                assert.same(value, c:get(key))
+            end
         end)
 
         it('supports keys up to 250 characters long', function()
