@@ -170,6 +170,18 @@ describe('libmemcached lifecycle', function()
             assert.equal(c, count_refs())
         end)
     end)
+
+    it('can be reloaded', function()
+        local l = require 'libmemcached'
+        assert(type(l) == 'table')
+        assert(package.loaded['libmemcached'])
+        package.loaded['libmemcached'] = nil
+        l = require 'libmemcached'
+        assert(type(l) == 'table')
+        assert(package.loaded['libmemcached'])
+        assert(l.new)
+        assert(l.behaviors)
+    end)
 end)
 
 local function describe_basic_commands(c)
