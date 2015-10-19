@@ -388,12 +388,12 @@ l_put(lua_State *L, memcached_set_pt f)
 
         case LUA_TNUMBER:
             flags = FLAG_NUMBER;
-            value = lua_tolstring(L, -1, &value_length);
+            value = lua_tolstring(L, 3, &value_length);
             break;
 
         case LUA_TBOOLEAN:
             flags = FLAG_BOOLEAN;
-            value = lua_toboolean(L, -1) ? "1" : "0";
+            value = lua_toboolean(L, 3) ? "1" : "0";
             value_length = 1;
             break;
 
