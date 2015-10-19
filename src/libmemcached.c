@@ -671,6 +671,7 @@ l_createmeta(lua_State *L, const char *name, const luaL_Reg *methods,
 int
 luaopen_libmemcached(lua_State *L)
 {
+    const int top = lua_gettop(L);
     luaL_Reg methods[] = {
         { "new", l_new },
         { }
@@ -756,7 +757,8 @@ luaopen_libmemcached(lua_State *L)
     lua_setfield(L, -2, "behaviors");
 
     l_setfuncs(L, methods);
-    assert(2 == lua_gettop(L));
+
+    assert(1 == lua_gettop(L) - top);
 
     return 1;
 }
