@@ -647,12 +647,12 @@ l_flush(lua_State *L)
 }
 
 
-static int
+static void
 l_createmeta(lua_State *L, const char *name, const luaL_Reg *methods,
              const luaL_Reg *mt)
 {
     if (!luaL_newmetatable(L, name)) {
-        return 0;
+        return;
     }
 
     l_setfuncs(L, mt);
@@ -664,7 +664,7 @@ l_createmeta(lua_State *L, const char *name, const luaL_Reg *methods,
     lua_pushliteral(L, "it is not allowed to get metatable.");
     lua_setfield(L, -2, "__metatable");
 
-    return 1;
+    return;
 }
 
 
@@ -704,11 +704,8 @@ luaopen_libmemcached(lua_State *L)
         { }
     };
 
-    if (!l_createmeta(L, MC_STATE, state_methods, state_mt)) {
-        return 0;
-    }
+    l_createmeta(L, MC_STATE, state_methods, state_mt);
 
-    // TODO: check
     lua_pop(L, 1);
 
     // module
@@ -759,6 +756,7 @@ luaopen_libmemcached(lua_State *L)
     lua_setfield(L, -2, "behaviors");
 
     l_setfuncs(L, methods);
+    assert(2 == lua_gettop(L));
 
     return 1;
 }
