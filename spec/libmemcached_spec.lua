@@ -112,6 +112,7 @@ describe('libmemcached lifecycle', function()
             collectgarbage()
             local N = 100
             local c = count_refs()
+            -- luacheck: ignore 331
             local t = {}
             for i = 1, N do
                 t[i] = assert(libmemcached.new('--server=127.0.0.1', json))
