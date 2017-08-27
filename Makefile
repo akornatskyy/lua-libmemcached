@@ -1,27 +1,21 @@
-.SILENT: env test clean qa debian rm lua luajit luarocks
-.PHONY: env test clean qa debian rm lua luajit luarocks
+.SILENT: clean env lib test qa debian rm lua luajit luarocks
+.PHONY: clean env lib test qa debian rm lua luajit luarocks
 
 ENV=$(shell pwd)/env
-LUA_IMPL=
+# lua | luajit
+LUA_IMPL=lua
 LUA_VERSION=5.1.5
 LUAROCKS_VERSION=2.4.2
 LIBMEMCACHED_DIR=/usr
 
-PLATFORM=$(shell uname -s)
-ifeq (Darwin,$(PLATFORM))
-	PLATFORM=macosx
-	LIBMEMCACHED_DIR=/opt/local
+ifeq (Darwin,$(shell uname -s))
+  PLATFORM?=osx
 else
-ifeq (Linux,$(PLATFORM))
-	PLATFORM=linux
-else
-	PLATFORM=ansi
+  PLATFORM?=linux
 endif
-endif
-
 
 clean:
-	find src/ -name '*.o' -delete
+	find src/ -name '*.o' -delete ; \
 	rm -rf luacov.* luac.out *.so
 
 env: luarocks
