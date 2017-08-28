@@ -16,7 +16,7 @@ endif
 
 clean:
 	find src/ -name '*.o' -delete ; \
-	rm -rf luacov.* luac.out *.so
+	rm -rf core luacov.* luac.out *.so
 
 env: luarocks
 	for rock in busted luacov luacheck; do \
@@ -35,7 +35,7 @@ qa:
 valgrind-test:
 	eval `$(ENV)/bin/luarocks path` ; \
 	echo 'os.exit = function() end' > exitless-busted ; \
-	echo 'require "busted.runner"({ batch = true })' >> exitless-busted ; \
+	echo 'require "busted.runner"({ standalone = false })' >> exitless-busted ; \
 	valgrind --error-exitcode=1 --leak-check=full --gen-suppressions=all \
 		$(ENV)/bin/lua exitless-busted ; \
 	rm exitless-busted

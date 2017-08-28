@@ -756,6 +756,9 @@ luaopen_libmemcached(lua_State *L)
 
     lua_setfield(L, -2, "behaviors");
 
+    lua_pushliteral(L, LIBMEMCACHED_VERSION_STRING);
+    lua_setfield(L, -2, "LIBMEMCACHED_VERSION");
+
     l_setfuncs(L, methods);
 
     assert(1 == lua_gettop(L) - top);

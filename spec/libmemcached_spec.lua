@@ -463,13 +463,21 @@ describe('libmemcached behavior', function()
         end)
     end)
 
-    it('default can be set back', function()
-        for name, i in pairs(libmemcached.behaviors) do
+    for name, i in pairs(libmemcached.behaviors) do
+        it('default can be set back ' .. name, function()
             local d = c:get_behavior(i)
-            assert.is_true(c:set_behavior(i, d))
+            -- luacheck: ignore 542
+            if name == 'KETAMA_WEIGHTED' and
+                libmemcached.LIBMEMCACHED_VERSION == '1.0.8' then
+                -- libmemcached version 1.0.8 (ubuntu:trusty) incorrectly
+                -- resets KETAMA_WEIGHTED flag with some side effect that
+                -- sometimes cause fail
+            else
+                assert.is_true(c:set_behavior(i, d))
+            end
             assert.equals(d, c:get_behavior(i))
-        end
-    end)
+        end)
+    end
 end)
 
 describe('libmemcached data encryption', function()
